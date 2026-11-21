@@ -1,134 +1,128 @@
+> **English** | [简体中文](./README.zh-CN.md)
+
 # Google One AI Kit
 
-> **Google AI 会员全家桶自动化串联 Skill —— 打通 Google One AI Pro 的 Colab 算力、5 TB 云盘与开发者额度，榨干每一项会员权益；用户只做授权，其余下载、部署、ComfyUI 出图与 LoRA 训练全由 AI 自动接管。**
+> **All-in-one Google AI Pro / Google One automation skill — connect your 200 monthly Colab Compute Units, 5 TB Google Drive, and developer credits into a zero-friction CLI + ComfyUI + FLUX LoRA studio.**
 
 ---
 
-## 为什么做这个 Skill？
+## Why This Skill?
 
-开通 **Google One / Google AI Pro（\$19.99/月）** 后，大多数人只用到了 Gemini 聊天，却白白浪费了每个月附带的 **200 个 Colab 计算单元**、**5 TB 云端硬盘**、**\$10/月 Google Cloud/Gemini API 开发者额度**、**1,000 点 Flow 视频额度** 与 **Whisk**。
+Most subscribers to **Google One / Google AI Pro (\$19.99/month)** only use the Gemini web chat and leave the rest of their monthly perks unused: **200 Colab Compute Units**, **5 TB of Google Drive**, **\$10/month in Google Cloud / Gemini API credits**, **1,000 Google Flow video credits**, and **Whisk**.
 
-`google-one-ai-kit` 把这套全流程封装成了可一键复刻的标准 **Agent Skill + 无头 CLI 脚本 + Colab Notebook + ComfyUI 工作流**：
-- **双模式全自动接管**：
-  - **模式 A · 纯命令行无头模式（macOS / Linux 首选）**：集成官方 [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli)，**只需首次做 1 次 OAuth 登录存进系统钥匙串**，之后开 L4、跑 ComfyUI API 多图融合、拉回成图、1 秒 `colab stop` 停机全在终端静默完成（0 浏览器窗口、0 每次重复弹窗）。
-  - **模式 B · 网页交互 + 云盘流式模式（全平台通用）**：引导启用 Google Drive **Stream（流式传输）**，19 GB FLUX 模型全存云端不占本地 SSD，需要手调 ComfyUI 节点时一键拉起 Cloudflare 网页界面。
-- **全避坑工程化**：内置免费 CPU 拉模（0 扣点）、`drive.flush_and_unmount()` 强制刷盘防大模型丢失、Drive File ID 直取 Colab URL、ComfyUI `--timeout 0` 长任务保活与 `finally` 自动关机止损等实战踩坑方案。
+`google-one-ai-kit` packages the entire end-to-end production workflow into a reproducible **Agent Skill + CLI Automation Scripts + Colab Notebooks + ComfyUI Workflows**:
+
+- **Dual Execution Modes**:
+  - **Mode A · Pure CLI Automation (Recommended on macOS / Linux)**: Powered by [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli). Perform **one-time OAuth once** (cached in OS Keyring), then spin up L4 GPUs, run multi-reference Redux blending via ComfyUI API, pull images locally, and run `colab stop` automatically in `finally:` — zero browser tabs and zero repeated OAuth prompts.
+  - **Mode B · Interactive Web ComfyUI + Streamed Drive (All Platforms)**: Guides Google Drive Desktop installation in **Stream files** mode (0 local SSD consumed by 19 GB models) and launches a Cloudflare-tunneled ComfyUI UI when you want visual node tweaking.
+- **Battle-Tested Hardening**: Includes free CPU model caching (0 compute units burned), `drive.flush_and_unmount()` to prevent 16 GB FUSE uploads from vanishing, direct Drive File ID -> Colab URL extraction, `--timeout 0` keepalive for long diffusion runs, and `colab stop` cost guards.
 
 ---
 
-## 整体工作流架构
+## Architecture Overview
 
 ```mermaid
 flowchart LR
-    U["用户（仅做安装拖拽与 OAuth 授权）"] --> A["AI Agent 读取 SKILL.md"]
-    A --> P0["本地 Mac/Win\n自动下载 Google Drive + 建 .venv"]
-    P0 -->|"Stream 流式挂载（0 占本地盘）"| D["Google Drive 5 TB\nGoogleOneAI_Studio/"]
-    A -->|"get_colab_urls.py 直取链接"| N0["Colab 00（免费 CPU · 0 点数）\n拉取 19GB FLUX.1 + Redux + 强制刷盘"]
+    U["User (One-Time OAuth / Installer Only)"] --> A["AI Agent (SKILL.md)"]
+    A -->|"Mode A: macOS/Linux"| CLI["google-colab-cli + colab_cli_flux.py\nZero-Browser L4 Provisioning + Auto Stop"]
+    A -->|"Mode B: Web UI + Drive"| D["Google Drive 5 TB\nStream Mode (0 Local SSD Used)"]
+    CLI -->|"Sync Outputs"| OUT["Local Outputs + Drive"]
+    D -->|"Free CPU (0 Units)"| N0["00_setup_and_download_models.ipynb\n19GB FLUX.1 + Redux + Flush"]
     N0 --> D
-    D -->|"extra_model_paths 零拷贝"| N1["Colab 01（L4 24GB GPU）\nComfyUI + Cloudflare Tunnel"]
-    N1 -->|"成图自动回流"| OUT["Drive outputs/ -> 本地访达"]
-    OUT -->|"精选 15~25 张 + prep_lora_dataset.py"| N2["Colab 02（L4/A100 GPU）\nai-toolkit 训练专属风格 LoRA"]
-    N2 -->|"自动归档 models/loras/"| N1
+    D -->|"Zero-Copy Mount"| N1["01_comfyui_studio.ipynb\nL4 GPU + Cloudflare Tunnel"]
+    N1 --> OUT
+    OUT -->|"Curate 15-25 Images + prep_lora_dataset.py"| N2["02_train_style_lora.ipynb\nai-toolkit Custom LoRA (L4/A100)"]
+    N2 -->|"Save to models/loras/"| N1
 ```
 
 ---
 
-## 作为 Agent Skill 安装使用
+## Install as an Agent Skill
 
-将本仓库克隆到你的 Agent 全局或项目 Skill 目录，直接对 AI 说：**「按 google-one-ai-kit 帮我搭一套 Google AI Pro 云端生图和训练环境」** 即可：
+Clone this repository into your agent's global or project skills folder, then ask your agent: *"Set up my Google AI Pro cloud image & LoRA studio using google-one-ai-kit"*:
 
 ```bash
-# 1. Antigravity（全局 Skill）
+# Antigravity (global skill)
 git clone https://github.com/zhaoyibo2014/google-one-ai-kit.git ~/.gemini/config/skills/google-one-ai-kit
 
-# 2. 或放入当前项目工作区（Antigravity / Claude Code / Codex 通用）
+# Or project-local (Antigravity / Claude Code / Codex)
 git clone https://github.com/zhaoyibo2014/google-one-ai-kit.git .agents/skills/google-one-ai-kit
 ```
 
 ---
 
-## 手动快速上手（5 步跑通）
+## Quickstart
 
-### 1. 初始化本地工具与自动下载 Google Drive 桌面版
+### Mode A: Pure CLI Automation (macOS / Linux Recommended)
+
+Authenticate once into your OS Keyring, then run L4 GPU ComfyUI generations directly from your terminal with automatic VM shutdown:
+
 ```bash
 git clone https://github.com/zhaoyibo2014/google-one-ai-kit.git
 cd google-one-ai-kit
 
+# 1. Local venv for helper scripts
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-# 检查环境；如未安装 Google Drive 桌面版会自动下载官方安装包并提示配置步骤
-.venv/bin/python scripts/check_env.py
-.venv/bin/python scripts/install_google_drive.py
-```
-> 安装登录 Google Drive 桌面版时，**务必在「Sync with Google Drive」步骤点 `Skip` 跳过本地目录备份**，保持默认 **`Stream files` 流式模式**。
-
-### 2. 同步工作流并获取 Colab 直达链接
-```bash
-# 可选：把你的风格参考图放入 workspace/style_refs/ 后同步
-.venv/bin/python scripts/sync_to_drive.py
-
-# 读取 Google Drive File ID 生成 Colab 直达 URL（绕开搜索延迟）
-.venv/bin/python scripts/get_colab_urls.py
-```
-
-### 3. 免费 CPU 拉取底模（0 计算单元）
-打开 `00_setup_and_download_models.ipynb` 直达链接，确认 **`Runtime -> Change runtime type -> CPU`**，点击 **`Run all`**。脚本会自动把约 19 GB 模型下进 Drive，并在第 5 步执行 `drive.flush_and_unmount()` 确保彻底落盘。
-
-### 4. L4 GPU 启动 ComfyUI 锁画风出图
-打开 `01_comfyui_studio.ipynb`，切到 **`L4 GPU`** 点击 **`Run all`**，打开输出的 `https://*.trycloudflare.com` 链接：
-- **Phase 1（无需训练直接锁风格）**：加载 `02_flux_redux_style.json`，在 `LoadImage` 选参考图，`StyleModelApply.strength` 设为 **`0.35 ~ 0.50`**，改写 `CLIPTextEncode` 英文提示词即可生成同画风新主体。
-- **收工防扣费**：用完务必点 **`Runtime -> Disconnect and delete runtime`**！
-
-### 5. 攒齐 15~25 张图后训练专属风格 LoRA
-```bash
-# 整理训练集（缩放至 16 倍数对齐，自动生成触发词 .txt 标注且不覆盖已有手工标注）
-.venv/bin/python scripts/prep_lora_dataset.py --input workspace/raw_selected --sync-to-drive
-```
-在 Colab 打开 `02_train_style_lora.ipynb`，配好 Hugging Face `HF_TOKEN`（需先在 `black-forest-labs/FLUX.1-dev` 同意协议），切换 `L4` 或 `A100` 一键开训，成品会自动归档至 `models/loras/`。
-
-### 模式 A：纯命令行无头全自动出图（macOS / Linux 推荐）
-
-一次登录存进系统钥匙串，之后零浏览器弹窗、全自动开卡出图并自动关机：
-```bash
-# 1. 安装 uv 与 google-colab-cli（需 Python >= 3.12，uv 会自动隔离安装，不碰现有 3.11 虚拟环境）
-brew install uv   # 或 pip install uv
+# 2. Install google-colab-cli (requires Python >= 3.12; uv isolates 3.12 cleanly)
+brew install uv   # or: pip install uv
 uv tool install --python 3.12 google-colab-cli
 
-# 2. 首次一次性 OAuth 登录（刷新令牌自动存系统钥匙串）并查看 200 计算单元余额
+# 3. One-time OAuth login (stored in OS Keyring) & check compute unit balance
 ~/.local/bin/colab usage
 
-# 3. 无头开 L4 跑 FLUX（支持重复传入 --ref 实现多图风格融合，用完自动 colab stop）
-.venv/bin/python scripts/colab_headless_flux.py \
+# 4. Run FLUX + single/multi-Redux on L4 GPU & auto-stop VM when finished
+.venv/bin/python scripts/colab_cli_flux.py \
   --gpu L4 \
   --ref workspace/style_refs/ref_style_01.png:0.42 \
   --prompt "mystyle, stylized concept art of a futuristic explorer, clean dark background" \
   --count 2
 ```
 
+### Mode B: Interactive Web ComfyUI + Google Drive Desktop
+
+```bash
+# 1. Check local environment & auto-download Google Drive Desktop installer
+.venv/bin/python scripts/check_env.py
+.venv/bin/python scripts/install_google_drive.py
+# -> During Drive setup: click "Skip" on local folder backup & keep "Stream files" mode!
+
+# 2. Sync notebooks, workflows & reference images, then extract direct Colab URLs
+.venv/bin/python scripts/sync_to_drive.py
+.venv/bin/python scripts/get_colab_urls.py
+```
+
+1. Open `00_setup_and_download_models.ipynb` on **CPU** runtime (`0` compute units) and **Run all** to cache the ~19 GB FLUX models into Drive (`Cell 5` flushes and unmounts safely).
+2. Open `01_comfyui_studio.ipynb` on **L4 GPU**, **Run all**, and open the printed `https://*.trycloudflare.com` URL. Load `02_flux_redux_style.json` (`StyleModelApply.strength = 0.35~0.50`) to lock your style.
+3. **Always click `Runtime -> Disconnect and delete runtime` when finished** to stop compute unit billing.
+
+### Training Your Own Style LoRA (15–25 Curated Images)
+
+```bash
+# Resize to multiples of 16 (max 1024px), generate starter captions, and sync to Drive
+.venv/bin/python scripts/prep_lora_dataset.py --input workspace/raw_selected --sync-to-drive
+```
+
+Accept the model license on [`black-forest-labs/FLUX.1-dev`](https://huggingface.co/black-forest-labs/FLUX.1-dev), add a Read `HF_TOKEN` to Colab **Secrets** (enable Notebook access), and run `02_train_style_lora.ipynb` on **L4** or **A100**. The final `.safetensors` LoRA is automatically saved to `models/loras/`.
+
 ---
 
-## 目录说明
+## Repository Layout
 
-| 路径 | 作用 |
+| Path | Description |
 | :--- | :--- |
-| [`SKILL.md`](./SKILL.md) | 标准 Agent Skill 指令集（涵盖模式 A 无头 CLI 与模式 B 网页工作流） |
-| [`notebooks/`](./notebooks) | `00` 免费 CPU 拉模、`01` ComfyUI 工作台、`02` `ai-toolkit` LoRA 训练 |
-| [`workflows/`](./workflows) | `01_flux_base_lora.json` 与 `02_flux_redux_style.json` 开箱工作流 |
-| [`scripts/`](./scripts) | 无头 CLI 出图（`colab_headless_flux.py`）、Drive 安装引导、体检、File ID 直取、同步与数据集处理 |
-| [`prompts/`](./prompts) | FLUX 自然语言提示词模板与 LoRA 凑料清单 |
-| [`references/google-ai-pro-perks.md`](./references/google-ai-pro-perks.md) | **Google AI Pro 全家桶权益榨干攻略**（\$10 API 额度、Flow、Whisk、Jules、NotebookLM） |
-| [`references/troubleshooting.md`](./references/troubleshooting.md) | Drive 刷盘、OAuth 授权、SSL 证书与 Colab 常见报错排查 |
-
----
-
-## Google One AI Pro 配套权益速览
-
-想了解如何把剩下的 **\$10/月云开发者额度**（可跑 150~300 张生图 API）、**Flow 1,000 点**、**Whisk**、**Antigravity / Jules** 一起用起来，请直接查看 👉 [**Google AI Pro 全家桶权益最大化指南**](./references/google-ai-pro-perks.md)。
+| [`SKILL.md`](./SKILL.md) | Standard Agent Skill instructions (CLI Automation + Web ComfyUI + OAuth gates) |
+| [`notebooks/`](./notebooks) | `00` Free CPU model cache, `01` ComfyUI Studio, `02` `ai-toolkit` LoRA trainer |
+| [`workflows/`](./workflows) | Ready-to-use `01_flux_base_lora.json` and `02_flux_redux_style.json` |
+| [`scripts/`](./scripts) | `colab_cli_flux.py`, `install_google_drive.py`, `get_colab_urls.py`, `check_env.py`, `sync_to_drive.py`, `prep_lora_dataset.py` |
+| [`prompts/`](./prompts) | Natural-language FLUX prompt templates & LoRA dataset checklist |
+| [`references/google-ai-pro-perks.md`](./references/google-ai-pro-perks.md) | Full guide to maximizing Google AI Pro perks (\$10 API credits, Flow, Whisk, Jules, NotebookLM) |
+| [`references/troubleshooting.md`](./references/troubleshooting.md) | Solutions for Drive FUSE flush, OAuth errors, SSL certs, and CLI timeouts |
 
 ---
 
 ## License & Disclaimer
 
-- 本仓库代码、脚本与 Notebook 采用 [MIT License](./LICENSE) 开源。
-- 第三方模型权重受各自协议约束（`FLUX.1-dev` 为非商用开源权重，如需商业化微调与分发请选用 Apache-2.0 模型或获取官方商业授权）。
+- Code, scripts, workflows, and notebooks in this repository are released under the [MIT License](./LICENSE).
+- Third-party model weights remain governed by their respective licenses (`FLUX.1-dev` weights are non-commercial; use Apache-2.0 base models or obtain commercial licensing before commercial deployment).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Headless FLUX + multi-Redux ComfyUI runner powered by google-colab-cli."""
+"""CLI-automated FLUX + multi-Redux ComfyUI runner powered by google-colab-cli."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ SPEC_PATH = "/content/studio_job_spec.json"
 COMFY_DIR = "/content/ComfyUI"
 REFS_STAGE = "/content/job_refs"
 OUT_DIR = "/content/job_outputs"
-LOG_PATH = "/content/comfyui_headless.log"
+LOG_PATH = "/content/comfyui_cli.log"
 
 os.makedirs(OUT_DIR, exist_ok=True)
 with open(SPEC_PATH, "r", encoding="utf-8") as f:
@@ -291,7 +291,7 @@ def _parse_ref_arg(raw: str) -> tuple[Path, float]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="纯命令行无头驱动 Colab GPU + ComfyUI 出图（0 浏览器、用完自动关机）。")
+    parser = argparse.ArgumentParser(description="纯命令行全自动驱动 Colab GPU + ComfyUI 出图（0 浏览器、用完自动关机）。")
     parser.add_argument("--gpu", default="L4", help="Colab GPU 类型（默认 L4）")
     parser.add_argument("--session", default="studio-gen", help="Colab 会话名（默认 studio-gen）")
     parser.add_argument("--job-json", type=Path, help="多批次任务 JSON 文件路径")

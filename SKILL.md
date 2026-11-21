@@ -18,7 +18,7 @@ description: >-
 
 ## Execution Mode Selection
 
-- **Mode A (Recommended on macOS / Linux): Pure Headless CLI (`google-colab-cli`)**
+- **Mode A (Recommended on macOS / Linux): CLI Automation (`google-colab-cli`)**
   - Best for batch generation, multi-reference Redux style mixing, and zero-babysitting execution: **0 browser windows**, **0 repeated Google Drive OAuth popups**, one-time login cached in OS Keyring, and automatic `colab stop` on exit.
   - Install `google-colab-cli` (requires Python >= 3.12; use `uv` so the local 3.11 `.venv` stays untouched):
     ```bash
@@ -26,9 +26,9 @@ description: >-
     uv tool install --python 3.12 google-colab-cli
     ```
   - **One-time OAuth**: Run `colab usage` (use `~/.local/bin/colab` if not yet on `PATH`). When it prints the `https://accounts.google.com/o/oauth2/...` URL and waits at `Enter the authorization code:`, show the URL to the user, ask them to paste back the authorization code, and pipe it into the waiting process (`send_input`). The refresh token is saved in the OS Keyring for all future sessions.
-  - **Headless FLUX / Multi-Redux generation** (provisions L4, clones ComfyUI + downloads ungated models on Colab datacenter network, queues API jobs, downloads PNGs locally + mirrors to Drive `outputs/`, and runs `colab stop` in `finally:`):
+  - **CLI-Automated FLUX / Multi-Redux generation** (provisions L4, clones ComfyUI + downloads ungated models on Colab datacenter network, queues API jobs, downloads PNGs locally + mirrors to Drive `outputs/`, and runs `colab stop` in `finally:`):
     ```bash
-    .venv/bin/python scripts/colab_headless_flux.py \
+    .venv/bin/python scripts/colab_cli_flux.py \
       --gpu L4 \
       --ref workspace/style_refs/ref_style_01.png:0.42 \
       --prompt "mystyle, ..." \

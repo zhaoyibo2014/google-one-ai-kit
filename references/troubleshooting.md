@@ -83,4 +83,4 @@
 ## 9. `colab exec` 执行生图/拉模中途 30 秒超时中断
 
 - **原因**：`google-colab-cli` 的 `colab exec` 默认 `--timeout` 为 `30.0` 秒（无标准输出超过 30 秒即判失败），而模型加载或单张扩散采样经常超过 30 秒。
-- **解法**：调用长耗时脚本时务必加上 **`--timeout 0`**（`scripts/colab_headless_flux.py` 已默认配置 `--timeout 0` 并开启 `flush=True` 实时回显）。
+- **解法**：调用长耗时脚本时务必加上 **`--timeout 0`**（`scripts/colab_cli_flux.py` 已默认配置 `--timeout 0` 并开启 `flush=True` 实时回显）。
