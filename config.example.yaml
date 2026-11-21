@@ -1,0 +1,18 @@
+# Google One AI Kit 配置文件（模板）
+# 如需自定义本地配置，请复制本文件为 config.local.yaml 后再修改（config.local.yaml 已被 .gitignore 忽略）
+
+drive_folder_name: "GoogleOneAI_Studio"
+# 如 Google Drive 桌面版挂载在自定义路径，可在此填写到 "My Drive" 或 "我的云端硬盘" 的绝对路径；留空则自动探测
+drive_root_override: ""
+
+# LoRA 训练基础配置
+trigger_word: "mystyle"
+default_dataset_name: "custom_style_v1"
+
+# 同步到 ComfyUI input/ 作为 Redux 风格锁参考图的图片映射（目标文件名: 源图片路径）
+# 默认留空；也可以直接把参考图放进 workspace/style_refs/ 目录，sync_to_drive.py 会自动一并同步。
+# 示例：
+# style_anchors:
+#   ref_style_01.png: "workspace/style_refs/ref_style_01.png"
+#   ref_bg_01.png: "/path/to/your/project/assets/bg_ref.png"
+style_anchors: {}

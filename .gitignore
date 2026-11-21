@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.DS_Store
+workspace/
+config.local.yaml
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin

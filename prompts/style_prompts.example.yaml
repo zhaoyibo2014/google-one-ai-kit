@@ -1,0 +1,49 @@
+# FLUX.1 通用风格提示词模板库（自然语言风格，非 Danbooru 词条堆砌）
+# ComfyUI 参数建议：CFG 固定为 1.0，FluxGuidance 设为 3.0~3.5。
+# 触发词 "mystyle" 在 Phase 1（仅 Redux 锁风格时）不影响底模输出；在 Phase 2（启用 LoRA 后）自动激活专属画风。
+
+style_suffix: >-
+  stylized high-detail digital concept art, crisp rim lighting,
+  cohesive color palette, clean composition, sharp material definition
+
+templates:
+  character_concept:
+    name: "角色全身设定图（适合单人立绘或 3D 建模前视图）"
+    recommended_size: [1024, 1536]
+    ref_image: "ref_style_01.png"
+    redux_strength: 0.42
+    prompt: >-
+      mystyle, full body stylized concept art of a futuristic explorer standing in a balanced front-facing pose,
+      sleek layered tactical outfit with subtle glowing accent trim, holding signature gear cleanly at the side,
+      clean solid dark neutral studio background, crisp rim light, full boots visible on floor
+
+  environment_backdrop:
+    name: "横版场景背景图（适合游戏关卡/插画横幅）"
+    recommended_size: [1344, 768]
+    ref_image: "ref_style_01.png"
+    redux_strength: 0.45
+    prompt: >-
+      mystyle, wide cinematic 2.5D environment backdrop at night,
+      clean open foreground floor with clear horizontal horizon line,
+      atmospheric architectural skyline in the background with dramatic volumetric lighting,
+      no characters, balanced symmetrical composition
+
+  icon_or_prop_dark_bg:
+    name: "道具 / 特效贴图（纯黑底方便后续抠图或叠加）"
+    recommended_size: [1024, 1024]
+    prompt: >-
+      mystyle, single isolated glowing energy artifact centered with generous margin,
+      crisp silhouette and fine surface detail, pure pitch black background,
+      game asset sprite concept, no text
+
+lora_dataset_checklist:
+  target_count: "15~25 张"
+  composition_mix:
+    - "8~10 张同一画风但不同主体/造型的全身或完整主体图"
+    - "4~5 张半身或近景特写（强化笔触、光影与材质细节）"
+    - "3~4 张道具、武器或局部元素图"
+    - "3~4 张同画风环境或场景构图"
+  tips:
+    - "只保留五官、结构、透视正常的精选高质量图（重质不重量）"
+    - "Phase 1 用 Redux 出图攒料时，建议把 strength 控制在 0.35~0.50，多通过文字改主体，避免全长得一样"
+    - "每张图配同名 .txt 文本，保持以 'mystyle, ' 开头并如实描述画面中的主体、姿势、服装、颜色和背景"
