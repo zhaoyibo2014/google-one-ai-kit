@@ -8,10 +8,11 @@
 
 开通 **Google One / Google AI Pro（\$19.99/月）** 后，大多数人只用到了 Gemini 聊天，却白白浪费了每个月附带的 **200 个 Colab 计算单元**、**5 TB 云端硬盘**、**\$10/月 Google Cloud/Gemini API 开发者额度**、**1,000 点 Flow 视频额度** 与 **Whisk**。
 
-`google-one-ai-kit` 把这套全流程封装成了可一键复刻的标准 **Agent Skill + 本地脚本 + Colab Notebook + ComfyUI 工作流**：
-- **极简交互体验**：需要你动手的只有「安装弹窗拖一下 / 登录点授权」，软件下载、环境搭建、云盘目录初始化、Colab 切卡启动、ComfyUI 冒烟测试、收工断连防扣费全由 AI Agent 自动接管。
-- **不占本地固态硬盘**：引导启用 Google Drive **Stream（流式传输）** 模式，19 GB FLUX 模型全存云端，Mac/PC 轻薄本也能秒级拉起 L4 GPU 出图与训 LoRA。
-- **全避坑工程化**：内置免费 CPU 拉模（0 扣点）、`drive.flush_and_unmount()` 强制刷盘防大模型丢失、Drive File ID 直取 Colab URL、ComfyUI 就绪轮询等实战踩坑方案。
+`google-one-ai-kit` 把这套全流程封装成了可一键复刻的标准 **Agent Skill + 无头 CLI 脚本 + Colab Notebook + ComfyUI 工作流**：
+- **双模式全自动接管**：
+  - **模式 A · 纯命令行无头模式（macOS / Linux 首选）**：集成官方 [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli)，**只需首次做 1 次 OAuth 登录存进系统钥匙串**，之后开 L4、跑 ComfyUI API 多图融合、拉回成图、1 秒 `colab stop` 停机全在终端静默完成（0 浏览器窗口、0 每次重复弹窗）。
+  - **模式 B · 网页交互 + 云盘流式模式（全平台通用）**：引导启用 Google Drive **Stream（流式传输）**，19 GB FLUX 模型全存云端不占本地 SSD，需要手调 ComfyUI 节点时一键拉起 Cloudflare 网页界面。
+- **全避坑工程化**：内置免费 CPU 拉模（0 扣点）、`drive.flush_and_unmount()` 强制刷盘防大模型丢失、Drive File ID 直取 Colab URL、ComfyUI `--timeout 0` 长任务保活与 `finally` 自动关机止损等实战踩坑方案。
 
 ---
 
@@ -86,16 +87,35 @@ python3 -m venv .venv
 ```
 在 Colab 打开 `02_train_style_lora.ipynb`，配好 Hugging Face `HF_TOKEN`（需先在 `black-forest-labs/FLUX.1-dev` 同意协议），切换 `L4` 或 `A100` 一键开训，成品会自动归档至 `models/loras/`。
 
+### 模式 A：纯命令行无头全自动出图（macOS / Linux 推荐）
+
+一次登录存进系统钥匙串，之后零浏览器弹窗、全自动开卡出图并自动关机：
+```bash
+# 1. 安装 uv 与 google-colab-cli（需 Python >= 3.12，uv 会自动隔离安装，不碰现有 3.11 虚拟环境）
+brew install uv   # 或 pip install uv
+uv tool install --python 3.12 google-colab-cli
+
+# 2. 首次一次性 OAuth 登录（刷新令牌自动存系统钥匙串）并查看 200 计算单元余额
+~/.local/bin/colab usage
+
+# 3. 无头开 L4 跑 FLUX（支持重复传入 --ref 实现多图风格融合，用完自动 colab stop）
+.venv/bin/python scripts/colab_headless_flux.py \
+  --gpu L4 \
+  --ref workspace/style_refs/ref_style_01.png:0.42 \
+  --prompt "mystyle, stylized concept art of a futuristic explorer, clean dark background" \
+  --count 2
+```
+
 ---
 
 ## 目录说明
 
 | 路径 | 作用 |
 | :--- | :--- |
-| [`SKILL.md`](./SKILL.md) | 标准 Agent Skill 指令集（定义 Agent 全自动编排与授权暂停点） |
+| [`SKILL.md`](./SKILL.md) | 标准 Agent Skill 指令集（涵盖模式 A 无头 CLI 与模式 B 网页工作流） |
 | [`notebooks/`](./notebooks) | `00` 免费 CPU 拉模、`01` ComfyUI 工作台、`02` `ai-toolkit` LoRA 训练 |
 | [`workflows/`](./workflows) | `01_flux_base_lora.json` 与 `02_flux_redux_style.json` 开箱工作流 |
-| [`scripts/`](./scripts) | 跨平台 Drive 安装引导、环境体检、File ID 直取、同步与数据集处理 |
+| [`scripts/`](./scripts) | 无头 CLI 出图（`colab_headless_flux.py`）、Drive 安装引导、体检、File ID 直取、同步与数据集处理 |
 | [`prompts/`](./prompts) | FLUX 自然语言提示词模板与 LoRA 凑料清单 |
 | [`references/google-ai-pro-perks.md`](./references/google-ai-pro-perks.md) | **Google AI Pro 全家桶权益榨干攻略**（\$10 API 额度、Flow、Whisk、Jules、NotebookLM） |
 | [`references/troubleshooting.md`](./references/troubleshooting.md) | Drive 刷盘、OAuth 授权、SSL 证书与 Colab 常见报错排查 |

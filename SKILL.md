@@ -12,7 +12,33 @@ description: >-
 
 # Google One AI Kit — Agent-First Automation Playbook
 
-**Core Principle: The user only performs interactive logins, OAuth approvals, and drag-and-drop installer steps. The Agent automates environment checks, installer downloads, `.venv` setup, Drive syncing, Colab URL discovery, browser execution, smoke testing, and runtime shutdown.**
+**Core Principle: The user only performs one-time logins/OAuth approvals (or optional installer drag-and-drop). The Agent automates environment checks, installer downloads, `.venv` setup, Drive syncing, headless Colab CLI provisioning & generation, browser fallback, smoke testing, and runtime shutdown.**
+
+---
+
+## Execution Mode Selection
+
+- **Mode A (Recommended on macOS / Linux): Pure Headless CLI (`google-colab-cli`)**
+  - Best for batch generation, multi-reference Redux style mixing, and zero-babysitting execution: **0 browser windows**, **0 repeated Google Drive OAuth popups**, one-time login cached in OS Keyring, and automatic `colab stop` on exit.
+  - Install `google-colab-cli` (requires Python >= 3.12; use `uv` so the local 3.11 `.venv` stays untouched):
+    ```bash
+    # macOS: brew install uv (or: pip install uv)
+    uv tool install --python 3.12 google-colab-cli
+    ```
+  - **One-time OAuth**: Run `colab usage` (use `~/.local/bin/colab` if not yet on `PATH`). When it prints the `https://accounts.google.com/o/oauth2/...` URL and waits at `Enter the authorization code:`, show the URL to the user, ask them to paste back the authorization code, and pipe it into the waiting process (`send_input`). The refresh token is saved in the OS Keyring for all future sessions.
+  - **Headless FLUX / Multi-Redux generation** (provisions L4, clones ComfyUI + downloads ungated models on Colab datacenter network, queues API jobs, downloads PNGs locally + mirrors to Drive `outputs/`, and runs `colab stop` in `finally:`):
+    ```bash
+    .venv/bin/python scripts/colab_headless_flux.py \
+      --gpu L4 \
+      --ref workspace/style_refs/ref_style_01.png:0.42 \
+      --prompt "mystyle, ..." \
+      --prefix studio_gen \
+      --count 2
+    ```
+    - Pass `--ref` multiple times to blend 2+ style anchors in one graph, or pass `--job-json <path>` to run multiple prompts/strengths in a single L4 session.
+    - Always verify `colab sessions` / `colab usage` shows `Active assignments: 0` afterward.
+- **Mode B (Windows or Interactive Node Tweaking): Browser + Google Drive Notebooks**
+  - Use Phases 1–3 below when running on Windows (not yet supported by `google-colab-cli`) or when the user wants interactive ComfyUI web UI access.
 
 ---
 

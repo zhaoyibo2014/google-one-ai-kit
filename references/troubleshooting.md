@@ -65,3 +65,22 @@
   1. 浏览器登录 Hugging Face，打开 `https://huggingface.co/black-forest-labs/FLUX.1-dev` 点击 **Agree**；
   2. 在 Hugging Face Settings -> Access Tokens 创建 **Read** Token；
   3. 在 Colab 左侧栏 🔑 **Secrets** 添加 `HF_TOKEN` 并打开 **Notebook access** 开关。
+
+---
+
+## 8. 安装 `google-colab-cli` 报错 `Requires-Python >= 3.12`
+
+- **现象**：macOS 系统 Python 3.11 下直接 `pip install google-colab-cli` 找不到可用版本。
+- **解法**：不要强改现有 `.venv`，直接用 `uv` 独立托管安装：
+  ```bash
+  brew install uv
+  uv tool install --python 3.12 google-colab-cli
+  ```
+  安装后可通过 `~/.local/bin/colab usage` 完成一次性 OAuth 并永久写入系统钥匙串。
+
+---
+
+## 9. `colab exec` 执行生图/拉模中途 30 秒超时中断
+
+- **原因**：`google-colab-cli` 的 `colab exec` 默认 `--timeout` 为 `30.0` 秒（无标准输出超过 30 秒即判失败），而模型加载或单张扩散采样经常超过 30 秒。
+- **解法**：调用长耗时脚本时务必加上 **`--timeout 0`**（`scripts/colab_headless_flux.py` 已默认配置 `--timeout 0` 并开启 `flush=True` 实时回显）。
