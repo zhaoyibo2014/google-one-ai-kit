@@ -31,6 +31,7 @@ STUDIO_SUBDIRS = (
     "input_refs",
     "datasets",
     "outputs",
+    "outputs_3d",
     "training_runs",
 )
 

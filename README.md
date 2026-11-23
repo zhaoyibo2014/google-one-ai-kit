@@ -13,9 +13,9 @@ Most subscribers to **Google One / Google AI Pro (\$19.99/month)** only use the 
 `google-one-ai-kit` packages the entire end-to-end production workflow into a reproducible **Agent Skill + CLI Automation Scripts + Colab Notebooks + ComfyUI Workflows**:
 
 - **Dual Execution Modes**:
-  - **Mode A · Pure CLI Automation (Recommended on macOS / Linux)**: Powered by [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli). Perform **one-time OAuth once** (cached in OS Keyring), then spin up L4 GPUs, run multi-reference Redux blending via ComfyUI API, pull images locally, and run `colab stop` automatically in `finally:` — zero browser tabs and zero repeated OAuth prompts.
+  - **Mode A · Pure CLI Automation (Recommended on macOS / Linux)**: Powered by [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli). Perform **one-time OAuth once** (cached in OS Keyring), then spin up L4 GPUs, run multi-reference Redux blending via ComfyUI API or **headless 2D-to-3D PBR mesh generation (`TRELLIS.2-4B` & `Hunyuan3D-2mv`)**, pull assets locally, and run `colab stop` automatically in `finally:` — zero browser tabs and zero repeated OAuth prompts.
   - **Mode B · Interactive Web ComfyUI + Streamed Drive (All Platforms)**: Guides Google Drive Desktop installation in **Stream files** mode (0 local SSD consumed by 19 GB models) and launches a Cloudflare-tunneled ComfyUI UI when you want visual node tweaking.
-- **Battle-Tested Hardening**: Includes free CPU model caching (0 compute units burned), `drive.flush_and_unmount()` to prevent 16 GB FUSE uploads from vanishing, direct Drive File ID -> Colab URL extraction, `--timeout 0` keepalive for long diffusion runs, and `colab stop` cost guards.
+- **Battle-Tested Hardening**: Includes free CPU model caching (0 compute units burned), `drive.flush_and_unmount()` to prevent 16 GB FUSE uploads from vanishing, direct Drive File ID -> Colab URL extraction, `--timeout 0` keepalive for long diffusion runs, isolated `micromamba` Python 3.11 + CUDA 12.4.1 environment for 3D CUDA extensions, and `colab stop` cost guards.
 
 ---
 
@@ -78,6 +78,13 @@ uv tool install --python 3.12 google-colab-cli
   --ref workspace/style_refs/ref_style_01.png:0.42 \
   --prompt "mystyle, stylized concept art of a futuristic explorer, clean dark background" \
   --count 2
+
+# 5. Or run headless 2D-to-3D on L4 GPU (TRELLIS.2-4B PBR GLB or Hunyuan3D-2mv)
+HF_TOKEN="hf_..." .venv/bin/python -u scripts/colab_cli_3d.py \
+  --engine trellis2 \
+  --input path/to/front_apose.png \
+  --name hero_v1 \
+  --gpu L4
 ```
 
 ### Mode B: Interactive Web ComfyUI + Google Drive Desktop
@@ -115,10 +122,11 @@ Accept the model license on [`black-forest-labs/FLUX.1-dev`](https://huggingface
 | [`SKILL.md`](./SKILL.md) | Standard Agent Skill instructions (CLI Automation + Web ComfyUI + OAuth gates) |
 | [`notebooks/`](./notebooks) | `00` Free CPU model cache, `01` ComfyUI Studio, `02` `ai-toolkit` LoRA trainer |
 | [`workflows/`](./workflows) | Ready-to-use `01_flux_base_lora.json` and `02_flux_redux_style.json` |
-| [`scripts/`](./scripts) | `colab_cli_flux.py`, `install_google_drive.py`, `get_colab_urls.py`, `check_env.py`, `sync_to_drive.py`, `prep_lora_dataset.py` |
+| [`scripts/`](./scripts) | `colab_cli_flux.py`, `colab_cli_3d.py`, `install_google_drive.py`, `get_colab_urls.py`, `check_env.py`, `sync_to_drive.py`, `prep_lora_dataset.py` |
 | [`prompts/`](./prompts) | Natural-language FLUX prompt templates & LoRA dataset checklist |
+| [`references/image-to-3d-colab.md`](./references/image-to-3d-colab.md) | Complete headless 2D-to-3D (`TRELLIS.2-4B` & `Hunyuan3D-2mv`) playbook & 10 real pitfalls |
 | [`references/google-ai-pro-perks.md`](./references/google-ai-pro-perks.md) | Full guide to maximizing Google AI Pro perks (\$10 API credits, Flow, Whisk, Jules, NotebookLM) |
-| [`references/troubleshooting.md`](./references/troubleshooting.md) | Solutions for Drive FUSE flush, OAuth errors, SSL certs, and CLI timeouts |
+| [`references/troubleshooting.md`](./references/troubleshooting.md) | Solutions for Drive FUSE flush, OAuth errors, SSL certs, CLI timeouts, and 3D CUDA builds |
 
 ---
 

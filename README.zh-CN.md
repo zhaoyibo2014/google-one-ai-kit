@@ -12,9 +12,9 @@
 
 `google-one-ai-kit` 把这套全流程封装成了可一键复刻的标准 **Agent Skill + 纯命令行全自动脚本 + Colab Notebook + ComfyUI 工作流**：
 - **双模式全自动接管**：
-  - **模式 A · 纯命令行全自动模式（macOS / Linux 首选）**：集成官方 [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli)，**只需首次做 1 次 OAuth 登录存进系统钥匙串**，之后开 L4、跑 ComfyUI API 多图融合、拉回成图、1 秒 `colab stop` 停机全在终端静默完成（0 浏览器窗口、0 每次重复弹窗）。
+  - **模式 A · 纯命令行全自动模式（macOS / Linux 首选）**：集成官方 [`google-colab-cli`](https://github.com/googlecolab/google-colab-cli)，**只需首次做 1 次 OAuth 登录存进系统钥匙串**，之后开 L4、跑 ComfyUI API 多图融合或 **无头 2D 转 3D PBR 建模（`TRELLIS.2-4B` & `Hunyuan3D-2mv`）**、拉回成品、1 秒 `colab stop` 停机全在终端静默完成（0 浏览器窗口、0 每次重复弹窗）。
   - **模式 B · 网页交互 + 云盘流式模式（全平台通用）**：引导启用 Google Drive **Stream（流式传输）**，19 GB FLUX 模型全存云端不占本地 SSD，需要手调 ComfyUI 节点时一键拉起 Cloudflare 网页界面。
-- **全避坑工程化**：内置免费 CPU 拉模（0 扣点）、`drive.flush_and_unmount()` 强制刷盘防大模型丢失、Drive File ID 直取 Colab URL、`--timeout 0` 长任务保活与 `finally` 自动关机止损等实战踩坑方案。
+- **全避坑工程化**：内置免费 CPU 拉模（0 扣点）、`drive.flush_and_unmount()` 强制刷盘防大模型丢失、Drive File ID 直取 Colab URL、`--timeout 0` 长任务保活、3D 隔离 `micromamba`（Python 3.11 + CUDA 12.4.1）构建与 `finally` 自动关机止损等实战踩坑方案。
 
 ---
 
@@ -75,6 +75,13 @@ uv tool install --python 3.12 google-colab-cli
   --ref workspace/style_refs/ref_style_01.png:0.42 \
   --prompt "mystyle, stylized concept art of a futuristic explorer, clean dark background" \
   --count 2
+
+# 4. 或纯命令行开 L4 跑 2D 转 3D（微软 TRELLIS.2-4B PBR GLB 或腾讯 Hunyuan3D-2mv）
+HF_TOKEN="hf_..." .venv/bin/python -u scripts/colab_cli_3d.py \
+  --engine trellis2 \
+  --input path/to/front_apose.png \
+  --name hero_v1 \
+  --gpu L4
 ```
 
 ### 模式 B：网页 ComfyUI + Google Drive 桌面版
@@ -109,10 +116,11 @@ uv tool install --python 3.12 google-colab-cli
 | [`SKILL.md`](./SKILL.md) | 标准 Agent Skill 指令集（涵盖模式 A 纯 CLI 与模式 B 网页工作流） |
 | [`notebooks/`](./notebooks) | `00` 免费 CPU 拉模、`01` ComfyUI 工作台、`02` `ai-toolkit` LoRA 训练 |
 | [`workflows/`](./workflows) | `01_flux_base_lora.json` 与 `02_flux_redux_style.json` 开箱工作流 |
-| [`scripts/`](./scripts) | 纯 CLI 出图（`colab_cli_flux.py`）、Drive 安装引导、体检、File ID 直取、同步与数据集处理 |
+| [`scripts/`](./scripts) | 纯 CLI 出图（`colab_cli_flux.py`）、纯 CLI 转 3D（`colab_cli_3d.py`）、Drive 安装引导、体检、File ID 直取、同步与数据集处理 |
 | [`prompts/`](./prompts) | FLUX 自然语言提示词模板与 LoRA 凑料清单 |
+| [`references/image-to-3d-colab.md`](./references/image-to-3d-colab.md) | **Colab L4 无头 2D 转 3D（`TRELLIS.2` & `Hunyuan3D-2mv`）全流程与 10 个实战踩坑** |
 | [`references/google-ai-pro-perks.md`](./references/google-ai-pro-perks.md) | **Google AI Pro 全家桶权益榨干攻略**（\$10 API 额度、Flow、Whisk、Jules、NotebookLM） |
-| [`references/troubleshooting.md`](./references/troubleshooting.md) | Drive 刷盘、OAuth 授权、SSL 证书与 CLI 超时排查 |
+| [`references/troubleshooting.md`](./references/troubleshooting.md) | Drive 刷盘、OAuth 授权、SSL 证书、CLI 超时与 3D 扩展编译排查 |
 
 ---
 

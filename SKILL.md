@@ -4,10 +4,12 @@ description: >-
   Orchestrate the full Google One / Google AI Pro ecosystem end-to-end: mount 5 TB Google Drive
   in zero-disk-footprint stream mode, auto-download Google Drive Desktop, cache 19 GB FLUX.1-dev FP8
   + Redux models on FREE Colab CPU (0 compute units burned), launch ComfyUI via Cloudflare Tunnel on
-  Colab L4 GPU, train custom style LoRAs with ostris/ai-toolkit, and maximize monthly developer/creative
-  perks ($10 Cloud/Gemini API credits, Whisk, Flow, Antigravity, Jules, NotebookLM). Use whenever a
-  user wants to set up Colab + Google Drive for AI image generation, replicate a Google AI Pro studio
-  workflow, train a custom FLUX style LoRA on Colab, or avoid wasting Google One AI Pro benefits.
+  Colab L4 GPU, run headless 2D-to-3D PBR mesh generation (`TRELLIS.2-4B` & `Hunyuan3D-2mv`) via
+  `google-colab-cli`, train custom style LoRAs with ostris/ai-toolkit, and maximize monthly
+  developer/creative perks ($10 Cloud/Gemini API credits, Whisk, Flow, Antigravity, Jules, NotebookLM).
+  Use whenever a user wants to set up Colab + Google Drive for AI image generation, run headless
+  2D-to-3D on Colab L4, replicate a Google AI Pro studio workflow, train a custom FLUX style LoRA on
+  Colab, or avoid wasting Google One AI Pro benefits.
 ---
 
 # Google One AI Kit — Agent-First Automation Playbook
@@ -37,6 +39,20 @@ description: >-
     ```
     - Pass `--ref` multiple times to blend 2+ style anchors in one graph, or pass `--job-json <path>` to run multiple prompts/strengths in a single L4 session.
     - Always verify `colab sessions` / `colab usage` shows `Active assignments: 0` afterward.
+  - **CLI-Automated 2D-to-3D PBR Mesh Generation (`TRELLIS.2-4B` & `Hunyuan3D-2mv`)**:
+    - Provisions an isolated `/opt/mamba3d` environment (Python 3.11 + CUDA 12.4.1 + GCC 12 + PyTorch 2.6.0+cu124) inside Colab L4 so CUDA extensions (`o_voxel`, `cumesh`, `flex_gemm`, `nvdiffrast`, `custom_rasterizer`) compile cleanly even on Colab's Python 3.13 / CUDA 13.0 image, using detached background execution + incremental `/content/job.log` polling + automatic `colab stop`.
+    - **Mandatory 1-second HF pre-flight for `TRELLIS.2-4B`**: `TRELLIS.2` depends on **two** gated Hugging Face repos (`facebook/dinov3-vitl16-pretrain-lvd1689m` manual approval + `briaai/RMBG-2.0` auto-approve upon clicking Agree). `scripts/colab_cli_3d.py` automatically checks both with `curl -I` before booting a paid L4 VM.
+      ```bash
+      # Recommended: Microsoft TRELLIS.2-4B (full PBR baseColor + metallicRoughness GLB)
+      HF_TOKEN="hf_..." .venv/bin/python -u scripts/colab_cli_3d.py \
+        --engine trellis2 --input path/to/front_apose.png --name hero_v1 --gpu L4
+
+      # Alternative / No-HF-Gate: Tencent MV-Adapter + Hunyuan3D-2mv + Hunyuan3DPaint
+      .venv/bin/python -u scripts/colab_cli_3d.py \
+        --engine hunyuan3d --input path/to/front_apose.png --name hero_v1 --gpu L4
+      ```
+    - Read [references/image-to-3d-colab.md](./references/image-to-3d-colab.md) for benchmark comparisons, 2D prep rules, and all 10 verified Colab 3D pitfalls.
+    - Always verify `~/.local/bin/colab usage` shows `Usage rate: 0.00/hr` and `Active assignments: 0` after completion or failure.
 - **Mode B (Windows or Interactive Node Tweaking): Browser + Google Drive Notebooks**
   - Use Phases 1–3 below when running on Windows (not yet supported by `google-colab-cli`) or when the user wants interactive ComfyUI web UI access.
 

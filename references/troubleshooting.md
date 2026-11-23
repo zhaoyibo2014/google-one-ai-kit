@@ -83,4 +83,48 @@
 ## 9. `colab exec` 执行生图/拉模中途 30 秒超时中断
 
 - **原因**：`google-colab-cli` 的 `colab exec` 默认 `--timeout` 为 `30.0` 秒（无标准输出超过 30 秒即判失败），而模型加载或单张扩散采样经常超过 30 秒。
-- **解法**：调用长耗时脚本时务必加上 **`--timeout 0`**（`scripts/colab_cli_flux.py` 已默认配置 `--timeout 0` 并开启 `flush=True` 实时回显）。
+- **解法**：调用长耗时脚本时务必加上 **`--timeout 0`**（`scripts/colab_cli_flux.py` 已默认配置 `--timeout 0` 并开启 `flush=True` 实时回显）；对于需要编译 CUDA 扩展的 20~30 分钟任务，改用 `scripts/colab_cli_3d.py` 的「后台脱离进程 + 20 秒增量轮询日志 + 重试」机制防止网络瞬断挂死。
+
+---
+
+## 10. Colab 默认 Python 3.13 + CUDA 13.0 导致 3D CUDA 扩展编译全挂
+
+- **现象**：在 Colab 宿主机环境直接编译 `nvdiffrast`、`cumesh`、`o_voxel`、`custom_rasterizer` 时报 C++ / NVCC / PyTorch ABI 不兼容。
+- **解法**：在 VM 内通过 `micromamba` 拉起隔离环境 `/opt/mamba3d`（`python=3.11` + `cuda-toolkit=12.4.1` + `gcc_linux-64=12` + `torch==2.6.0+cu124`），并设 `TORCH_CUDA_ARCH_LIST=8.9`、`MAX_JOBS=4` 与 `MPLBACKEND=Agg`。详见 [2D 转 3D 实战手册](./image-to-3d-colab.md)。
+
+---
+
+## 11. `transformers 5.x` 破坏 `Hunyuan3D-2mv` 与 `TRELLIS.2` 视觉编码器
+
+- **现象**：
+  - `Hunyuan3D-2mv` 报 `SingleImageEncoder`（`DINOv2`）层键名不匹配；
+  - `TRELLIS.2` 报 `AttributeError: 'DINOv3ViTModel' object has no attribute 'layer'`。
+- **解法**：`Hunyuan3D-2mv` 锁定 `transformers==4.46.3`、`diffusers==0.31.0`、`huggingface_hub<1.0.0`；`TRELLIS.2` 锁定 `transformers==4.57.6`、`huggingface-hub>=0.34.0,<1.0.0`、`tokenizers>=0.22.0,<=0.23.0` 并加 `DINOV3_LAYER_OK` 预检。
+
+---
+
+## 12. 跑 `TRELLIS.2` 报 `403`：`briaai/RMBG-2.0` 与 `DINOv3` 双门控缺失
+
+- **现象**：只放行了 `facebook/dinov3-vitl16-pretrain-lvd1689m`，进到 `Trellis2ImageTo3DPipeline.from_pretrained` 时被第二个隐藏门控仓库 `briaai/RMBG-2.0` 拦截。
+- **解法**：`DINOv3` 需人工审批（1~2 天），`RMBG-2.0` 点 **Agree** 即自动秒批。运行 `scripts/colab_cli_3d.py` 时会自动先用 `curl` 1 秒预检两个仓库均返回 `HTTP 200` 再开 GPU 卡。
+
+---
+
+## 13. `TRELLIS.2` 报 `No module named 'flash_attn'` 或 C++11 ABI 符号未定义
+
+- **现象**：`trellis2/modules/sparse/config.py` 忽略 `SPARSE_ATTN_BACKEND=sdpa` 并回退到 `flash_attn`；若强装第三方 `flash_attn` 预编译 wheel 容易报 `_ZN3c105ErrorC2...` 符号错配，源码编译则耗时 30+ 分钟。
+- **解法**：设 `ATTN_BACKEND=sdpa` + **`SPARSE_ATTN_BACKEND=xformers`**，安装与 `torch==2.6.0` 原生匹配的官方 **`xformers==0.0.29.post3 --no-deps`**（~5 秒免编译），并在推理前跑 `XFORMERS_CUDA_OK` 算子自检。
+
+---
+
+## 14. `Hunyuan3DPaint` 找不到 `custom_rasterizer` 或 `libc10.so`
+
+- **现象**：用 `pip install -e .` 安装 `custom_rasterizer` / `differentiable_renderer` 后导入失败，或加载 `.so` 时缺 `torch/lib` 动态库路径。
+- **解法**：改用非可编辑正式安装（`pip install . --no-build-isolation --no-deps`），把 `site-packages/torch/lib` 注入 `LD_LIBRARY_PATH`，并在流程前做 `CUSTOM_RASTERIZER_OK` 导入预检。
+
+---
+
+## 15. `TRELLIS.2` 转盘预览 `cv2.imread("forest.exr")` 返回 `None` 导致崩溃
+
+- **现象**：新版 OpenCV 5.1.0 默认无法读取 `.exr`，在导出 `.glb` 前执行 `cv2.cvtColor(hdri_bgr, ...)` 直接抛 `Assertion failed: !_src.empty()` 退出。
+- **解法**：`scripts/colab_cli_3d.py` 已将 `trellis2_pbr.glb` 导出提前至预览渲染之前，并在读取 `.exr` 失败时自动回退到程序化柔光 `EnvMap` 张量。
